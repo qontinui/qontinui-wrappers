@@ -63,5 +63,35 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "qontinui": {
+    "wrapper": {
+      "manifestVersion": 1,
+      "id": "gmail",
+      "displayName": "Gmail",
+      "description": "Read, search, reply to, and archive Gmail messages via the Gmail REST API",
+      "transport": "api",
+      "categories": ["productivity", "email"],
+      "envVars": [
+        {
+          "name": "GMAIL_OAUTH_CLIENT_ID",
+          "required": true,
+          "secret": true,
+          "description": "OAuth 2.0 client ID from Google Cloud Console"
+        },
+        {
+          "name": "GMAIL_OAUTH_CLIENT_SECRET",
+          "required": true,
+          "secret": true,
+          "description": "OAuth 2.0 client secret from Google Cloud Console"
+        },
+        {
+          "name": "GMAIL_REFRESH_TOKEN",
+          "required": true,
+          "secret": true,
+          "description": "OAuth refresh token (run `gmail-oauth-setup` to obtain one)"
+        }
+      ]
+    }
+  }
 }

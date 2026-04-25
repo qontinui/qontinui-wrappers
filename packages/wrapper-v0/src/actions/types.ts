@@ -15,5 +15,12 @@ export interface ActionDescriptor<TParams = unknown, TResult = unknown> {
   id: string;
   supports: SupportedKinds;
   paramSchema: Record<string, unknown>;
+  /**
+   * If `true`, the runner's DispatchRouter serializes calls to this action
+   * via a per-(wrapper, action) mutex. Defaults to `false`. The wrapper
+   * framework's `HandlerRegistry` does not enforce this — it's a manifest
+   * hint consumed by the host runner.
+   */
+  exclusive?: boolean;
   handler: (params: TParams | undefined, ctx: unknown) => Promise<TResult>;
 }

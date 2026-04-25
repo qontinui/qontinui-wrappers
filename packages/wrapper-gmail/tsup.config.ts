@@ -12,7 +12,13 @@ export default defineConfig({
   },
   format: ['cjs', 'esm'],
   dts: false,
-  splitting: false,
+  // Splitting on so the `import('./handlers.js')` deferred load in
+  // `index-node.ts` produces a separate chunk — without it tsup hoists the
+  // static `import { google } from 'googleapis'` (transitively pulled in by
+  // handlers) to the top of the bundle, which adds ~450ms of cold startup
+  // to the `--manifest-only` fast path. With splitting, googleapis only
+  // loads when the daemon path actually awaits the dynamic import.
+  splitting: true,
   sourcemap: true,
   clean: true,
   treeshake: true,

@@ -64,5 +64,23 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "qontinui": {
+    "wrapper": {
+      "manifestVersion": 1,
+      "id": "v0",
+      "displayName": "Vercel v0",
+      "description": "Generate React components with Vercel v0 from a natural-language prompt",
+      "transport": "api",
+      "categories": ["ai", "frontend"],
+      "envVars": [
+        {
+          "name": "V0_ACCESS_TOKEN",
+          "required": true,
+          "secret": true,
+          "description": "v0 API token from https://v0.app/account"
+        }
+      ]
+    }
+  }
 }
