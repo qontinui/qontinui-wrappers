@@ -1,0 +1,10 @@
+{
+  "extends": "@qontinui/_tsconfig/tsconfig.react.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true,
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

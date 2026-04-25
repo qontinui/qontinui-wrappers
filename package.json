@@ -1,0 +1,26 @@
+{
+  "name": "qontinui-wrappers",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "npm@11.12.1",
+  "description": "Reference UI Bridge wrappers (api-only and api+browser hybrids) built on @qontinui/ui-bridge-wrapper.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,63 @@
+{
+  "name": "@qontinui/wrapper-gmail",
+  "version": "0.1.0",
+  "description": "UI Bridge wrapper — Gmail REST API (api transport only).",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./node": {
+      "types": "./dist/index-node.d.ts",
+      "import": "./dist/index-node.js",
+      "require": "./dist/index-node.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "echo \"(no lint configured)\"",
+    "clean": "rimraf dist coverage"
+  },
+  "peerDependencies": {
+    "@qontinui/ui-bridge": "*",
+    "@qontinui/ui-bridge-wrapper": "*",
+    "react": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@qontinui/_testing-harness": "*",
+    "@qontinui/_tsconfig": "*",
+    "@qontinui/ui-bridge": "file:../../../ui-bridge/packages/ui-bridge",
+    "@qontinui/ui-bridge-wrapper": "file:../../../ui-bridge/packages/ui-bridge-wrapper",
+    "@types/node": "^20.10.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "rimraf": "^5.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.3.0",
+    "vitest": "^4.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

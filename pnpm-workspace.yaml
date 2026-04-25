@@ -1,0 +1,6 @@
+# This repo uses npm workspaces (see package.json). This file is kept purely
+# as documentation for the intended package layout. Do not invoke pnpm here —
+# the parent ui-bridge repo uses npm and these wrappers link to it via
+# `file:../../../ui-bridge/packages/*` specs that assume npm's resolution.
+packages:
+  - 'packages/*'
