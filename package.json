@@ -2,7 +2,7 @@
   "name": "qontinui-wrappers",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "npm@11.12.1",
+  "packageManager": "pnpm@10.33.2",
   "description": "Reference UI Bridge wrappers (api-only and api+browser hybrids) built on @qontinui/ui-bridge-wrapper.",
   "workspaces": [
     "packages/*"
@@ -22,5 +22,13 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "pnpm": {
+    "overrides": {
+      "@qontinui/ui-bridge": "link:../ui-bridge/packages/ui-bridge",
+      "@qontinui/ui-bridge-wrapper": "link:../ui-bridge/packages/ui-bridge-wrapper",
+      "@qontinui/ui-bridge-headless": "link:../ui-bridge/packages/ui-bridge-headless",
+      "@qontinui/ui-bridge-extension": "link:../ui-bridge/packages/ui-bridge-extension"
+    }
+  }
 }

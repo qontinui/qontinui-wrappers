@@ -45,8 +45,8 @@
     }
   },
   "devDependencies": {
-    "@qontinui/_testing-harness": "*",
-    "@qontinui/_tsconfig": "*",
+    "@qontinui/_testing-harness": "workspace:*",
+    "@qontinui/_tsconfig": "workspace:*",
     "@qontinui/ui-bridge": "file:../../../ui-bridge/packages/ui-bridge",
     "@qontinui/ui-bridge-wrapper": "file:../../../ui-bridge/packages/ui-bridge-wrapper",
     "@types/node": "^20.10.0",
