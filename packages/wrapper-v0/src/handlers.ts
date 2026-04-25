@@ -12,6 +12,7 @@ import type { WrapperTransport, WrapperTransportKind } from '@qontinui/ui-bridge
 import { createComponent } from './actions/create-component.js';
 import { iterateComponent } from './actions/iterate-component.js';
 import { exportCode } from './actions/export-code.js';
+import { downloadComponent } from './actions/download-component.js';
 import { listRecent } from './actions/list-recent.js';
 import { stepThroughIterations } from './actions/step-through-iterations.js';
 import { inspectPreviewState } from './actions/inspect-preview-state.js';
@@ -21,6 +22,7 @@ export const V0_ACTIONS: ReadonlyArray<ActionDescriptor<unknown, unknown>> = [
   createComponent as ActionDescriptor<unknown, unknown>,
   iterateComponent as ActionDescriptor<unknown, unknown>,
   exportCode as ActionDescriptor<unknown, unknown>,
+  downloadComponent as ActionDescriptor<unknown, unknown>,
   listRecent as ActionDescriptor<unknown, unknown>,
   stepThroughIterations as ActionDescriptor<unknown, unknown>,
   inspectPreviewState as ActionDescriptor<unknown, unknown>,

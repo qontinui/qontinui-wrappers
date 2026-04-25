@@ -8,13 +8,13 @@
  * `iterationId` public names; internally `componentId === chatId` and
  * `iterationId === chat.latestVersion.id` after the message lands.
  *
- * Endpoints:
- *   POST /v1/chats/{chatId}/messages { message }  → MessageDetail
- *   GET  /v1/chats/{chatId}                       → ChatDetail (for new latestVersion.id)
+ * Endpoint: POST /v1/chats/{chatId}/messages { message }  → ChatDetail
  *
- * Two requests instead of one, but reliable: the message-detail response
- * shape isn't fully captured in our shapes doc, so re-fetching the chat to
- * read `latestVersion.id` is the safe portable path.
+ * Verified against v0's OpenAPI spec (`/v1/openapi.json`,
+ * `chats.sendMessage` operation): the success response is the full
+ * `ChatDetail` schema, not just a MessageDetail. That means the new
+ * version produced as a side-effect of the message is already on
+ * `latestVersion.id` in the response — no follow-up GET needed.
  *
  * v0 API surface may change — verify against their current docs.
  */
@@ -61,15 +61,11 @@ export const iterateComponent: ActionDescriptor<
 
     return withRetry(async () => {
       const client = createV0ApiClient();
-      // 1) Send the follow-up message — server creates a new version as a side effect.
-      await client.post<unknown>(
+      // POST returns ChatDetail (per OpenAPI), so latestVersion.id is on
+      // this single response. No follow-up GET needed.
+      const detail = await client.post<V0ChatDetailWithVersion>(
         `/v1/chats/${encodeURIComponent(componentId)}/messages`,
         { message: prompt }
-      );
-      // 2) Re-fetch chat detail to read the new latestVersion.id. Reliable
-      // across response-shape variants of chats.sendMessage.
-      const detail = await client.get<V0ChatDetailWithVersion>(
-        `/v1/chats/${encodeURIComponent(componentId)}`
       );
       return { iterationId: detail.latestVersion?.id ?? '' };
     }, { attempts: 3, baseMs: 250 });

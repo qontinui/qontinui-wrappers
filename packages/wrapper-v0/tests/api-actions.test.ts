@@ -61,20 +61,14 @@ function mockFetchSequence(
 }
 
 describe('iterate-component (api-only)', () => {
-  it('POSTs the message then re-fetches chat detail for latestVersion.id', async () => {
-    mockFetchSequence([
-      // 1) POST /v1/chats/{id}/messages — response shape varies; we just
-      //    need it to be a 200 JSON.
-      { result: { id: 'msg-1', object: 'message' } },
-      // 2) GET /v1/chats/{id} — used to read latestVersion.id.
-      {
-        result: {
-          id: 'abc',
-          object: 'chat',
-          latestVersion: { id: 'ver-99', object: 'version' },
-        },
-      },
-    ]);
+  it('POSTs the message and reads latestVersion.id from the ChatDetail response', async () => {
+    // Per OpenAPI, chats.sendMessage returns ChatDetail — single call,
+    // no follow-up GET needed.
+    mockFetchOnce({
+      id: 'abc',
+      object: 'chat',
+      latestVersion: { id: 'ver-99', object: 'version' },
+    });
     const { iterateComponent } = await import('../src/actions/iterate-component.js');
     const result = await iterateComponent.handler(
       { componentId: 'abc', prompt: 'make it darker' },
@@ -82,20 +76,13 @@ describe('iterate-component (api-only)', () => {
     );
     expect(result).toEqual({ iterationId: 'ver-99' });
     const fetchSpy = (globalThis as unknown as { fetch: ReturnType<typeof vi.fn> }).fetch;
-    // First call: POST messages.
-    expect(fetchSpy).toHaveBeenNthCalledWith(
-      1,
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(
       'https://api.test/v1/chats/abc/messages',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({ Authorization: 'Bearer tok' }),
       })
-    );
-    // Second call: GET chat detail.
-    expect(fetchSpy).toHaveBeenNthCalledWith(
-      2,
-      'https://api.test/v1/chats/abc',
-      expect.objectContaining({ method: 'GET' })
     );
   });
 
@@ -238,5 +225,105 @@ describe('create-component (api path)', () => {
     await expect(
       createComponent.handler({ prompt: 'x' }, { kind: 'api' })
     ).rejects.toThrow(/500/);
+  });
+});
+
+describe('download-component (api-only)', () => {
+  /** Stub fetch with a binary Response. Subsequent test sequences are not
+   *  supported by this helper — use mockFetchSequence for multi-call paths.
+   *  Wraps bytes in a Blob to satisfy TS's BodyInit typing (Uint8Array is
+   *  a valid BodyInit at runtime but lib.dom.d.ts's union is narrower). */
+  function mockBinaryFetchOnce(bytes: Uint8Array, contentType: string): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(new Blob([bytes as BlobPart]), {
+        status: 200,
+        headers: { 'content-type': contentType },
+      }))
+    );
+  }
+
+  it('hits the version-scoped download endpoint and returns base64 bytes', async () => {
+    const bytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04, 0xde, 0xad, 0xbe, 0xef]); // PK\x03\x04 + payload
+    mockBinaryFetchOnce(bytes, 'application/zip');
+    const { downloadComponent } = await import('../src/actions/download-component.js');
+    const result = await downloadComponent.handler(
+      { componentId: 'chat-x', iterationId: 'ver-y' },
+      { kind: 'api' }
+    );
+    expect(result.format).toBe('zip');
+    expect(result.byteLength).toBe(bytes.byteLength);
+    // Decode base64 round-trip and confirm bytes match.
+    const decoded = Buffer.from(result.base64, 'base64');
+    expect(Array.from(decoded)).toEqual(Array.from(bytes));
+
+    const fetchSpy = (globalThis as unknown as { fetch: ReturnType<typeof vi.fn> }).fetch;
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.test/v1/chats/chat-x/versions/ver-y/download',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ Accept: 'application/zip' }),
+      })
+    );
+  });
+
+  it('falls back to chat.latestVersion.id when iterationId is omitted', async () => {
+    // Two calls: GET /chats/{id} for version discovery, GET .../download for bytes.
+    let callIdx = 0;
+    const bytes = new Uint8Array([0x1f, 0x8b, 0x08, 0x00]); // gzip magic
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        if (callIdx++ === 0) {
+          return new Response(JSON.stringify({
+            id: 'chat-x',
+            object: 'chat',
+            latestVersion: { id: 'ver-latest', object: 'version' },
+          }), { status: 200, headers: { 'content-type': 'application/json' } });
+        }
+        return new Response(new Blob([bytes as BlobPart]), {
+          status: 200,
+          headers: { 'content-type': 'application/gzip' },
+        });
+      })
+    );
+    const { downloadComponent } = await import('../src/actions/download-component.js');
+    const result = await downloadComponent.handler(
+      { componentId: 'chat-x', format: 'gzip' },
+      { kind: 'api' }
+    );
+    expect(result.format).toBe('gzip');
+    expect(result.byteLength).toBe(bytes.byteLength);
+
+    const fetchSpy = (globalThis as unknown as { fetch: ReturnType<typeof vi.fn> }).fetch;
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      1,
+      'https://api.test/v1/chats/chat-x',
+      expect.objectContaining({ method: 'GET' })
+    );
+    expect(fetchSpy).toHaveBeenNthCalledWith(
+      2,
+      'https://api.test/v1/chats/chat-x/versions/ver-latest/download',
+      expect.objectContaining({
+        method: 'GET',
+        headers: expect.objectContaining({ Accept: 'application/gzip' }),
+      })
+    );
+  });
+
+  it('throws when chat has no latestVersion and no iterationId given', async () => {
+    mockFetchOnce({ id: 'chat-empty', object: 'chat' }); // no latestVersion
+    const { downloadComponent } = await import('../src/actions/download-component.js');
+    await expect(
+      downloadComponent.handler({ componentId: 'chat-empty' }, { kind: 'api' })
+    ).rejects.toThrow(/no latestVersion/);
+  });
+
+  it('throws on missing componentId', async () => {
+    mockFetchOnce({});
+    const { downloadComponent } = await import('../src/actions/download-component.js');
+    await expect(
+      downloadComponent.handler({ componentId: '' }, { kind: 'api' })
+    ).rejects.toThrow(/componentId/);
   });
 });
