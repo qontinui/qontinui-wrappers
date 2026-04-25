@@ -60,9 +60,10 @@ describe('iterate-component (api-only)', () => {
 });
 
 describe('list-recent', () => {
-  it('normalizes camelCase + snake_case responses', async () => {
+  it('reads /v1/chats and normalizes camelCase + snake_case row shapes', async () => {
     mockFetchOnce({
-      components: [
+      object: 'list',
+      data: [
         { id: 'a', title: 'Alpha', updatedAt: '2026-01-01' },
         { id: 'b', name: 'Beta', updated_at: '2026-01-02' },
       ],
@@ -73,6 +74,11 @@ describe('list-recent', () => {
       { id: 'a', title: 'Alpha', updatedAt: '2026-01-01' },
       { id: 'b', title: 'Beta', updatedAt: '2026-01-02' },
     ]);
+    const fetchSpy = (globalThis as unknown as { fetch: ReturnType<typeof vi.fn> }).fetch;
+    expect(fetchSpy).toHaveBeenCalledWith(
+      'https://api.test/v1/chats?limit=5',
+      expect.any(Object)
+    );
   });
 });
 
