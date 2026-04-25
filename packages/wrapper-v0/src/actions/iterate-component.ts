@@ -1,8 +1,20 @@
 /**
  * Action: `iterate-component`
  *
- * Posts a follow-up prompt to an existing component, producing a new
- * iteration. `api` transport only — the iterate endpoint is documented.
+ * Posts a follow-up prompt to an existing v0 chat, producing a new version.
+ * v0's data model: each chat has many messages; sending a user message
+ * triggers an assistant response and creates a new version snapshot
+ * server-side. This wrapper preserves the historical `componentId` /
+ * `iterationId` public names; internally `componentId === chatId` and
+ * `iterationId === chat.latestVersion.id` after the message lands.
+ *
+ * Endpoints:
+ *   POST /v1/chats/{chatId}/messages { message }  → MessageDetail
+ *   GET  /v1/chats/{chatId}                       → ChatDetail (for new latestVersion.id)
+ *
+ * Two requests instead of one, but reliable: the message-detail response
+ * shape isn't fully captured in our shapes doc, so re-fetching the chat to
+ * read `latestVersion.id` is the safe portable path.
  *
  * v0 API surface may change — verify against their current docs.
  */
@@ -27,6 +39,13 @@ export const iterateComponentParamSchema = paramSchemaOf({
 
 const supports = ['api'] as const;
 
+interface V0ChatDetailWithVersion {
+  id?: string;
+  latestVersion?: {
+    id?: string;
+  };
+}
+
 export const iterateComponent: ActionDescriptor<
   IterateComponentParams,
   IterateComponentResult
@@ -42,11 +61,17 @@ export const iterateComponent: ActionDescriptor<
 
     return withRetry(async () => {
       const client = createV0ApiClient();
-      const resp = await client.post<{ iterationId: string; id?: string }>(
-        `/v1/components/${encodeURIComponent(componentId)}/iterations`,
-        { prompt }
+      // 1) Send the follow-up message — server creates a new version as a side effect.
+      await client.post<unknown>(
+        `/v1/chats/${encodeURIComponent(componentId)}/messages`,
+        { message: prompt }
       );
-      return { iterationId: resp.iterationId ?? resp.id ?? '' };
+      // 2) Re-fetch chat detail to read the new latestVersion.id. Reliable
+      // across response-shape variants of chats.sendMessage.
+      const detail = await client.get<V0ChatDetailWithVersion>(
+        `/v1/chats/${encodeURIComponent(componentId)}`
+      );
+      return { iterationId: detail.latestVersion?.id ?? '' };
     }, { attempts: 3, baseMs: 250 });
   },
 };

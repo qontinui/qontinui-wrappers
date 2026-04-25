@@ -1,8 +1,18 @@
 /**
  * Action: `export-code`
  *
- * Fetches the generated source code for a component (or specific iteration)
- * as a map of `path -> contents`. `api` transport only.
+ * Fetches the generated source files for a v0 chat version as a map of
+ * `path -> contents`. v0's data model: each chat has versions; each
+ * version exposes its files inline at `version.files[]`. There is no
+ * separate `/files` subresource (404). This wrapper preserves the
+ * historical `componentId` / `iterationId` public names; internally
+ * `componentId === chatId` and `iterationId === versionId`. When
+ * `iterationId` is omitted, the wrapper fetches chat detail first and uses
+ * `chat.latestVersion.id`.
+ *
+ * Endpoints:
+ *   GET /v1/chats/{chatId}                          → ChatDetail (when no iterationId)
+ *   GET /v1/chats/{chatId}/versions/{versionId}     → VersionDetail with files[]
  *
  * v0 API surface may change — verify against their current docs.
  */
@@ -27,6 +37,26 @@ export const exportCodeParamSchema = paramSchemaOf({
 
 const supports = ['api'] as const;
 
+interface V0VersionFile {
+  object?: string;
+  name?: string;
+  content?: string;
+  locked?: boolean;
+}
+
+interface V0VersionDetailResponse {
+  id?: string;
+  object?: string;
+  files?: V0VersionFile[];
+}
+
+interface V0ChatDetailForExport {
+  id?: string;
+  latestVersion?: {
+    id?: string;
+  };
+}
+
 export const exportCode: ActionDescriptor<ExportCodeParams, ExportCodeResult> = {
   id: 'export-code',
   supports,
@@ -34,14 +64,32 @@ export const exportCode: ActionDescriptor<ExportCodeParams, ExportCodeResult> = 
   handler: async (params): Promise<ExportCodeResult> => {
     const componentId = params?.componentId;
     if (!componentId) throw new Error("export-code requires 'componentId'");
-    const path = params?.iterationId
-      ? `/v1/components/${encodeURIComponent(componentId)}/iterations/${encodeURIComponent(params.iterationId)}/export`
-      : `/v1/components/${encodeURIComponent(componentId)}/export`;
 
     return withRetry(async () => {
       const client = createV0ApiClient();
-      const resp = await client.get<{ files?: Record<string, string> }>(path);
-      return { files: resp.files ?? {} };
+      let versionId = params?.iterationId;
+      if (!versionId) {
+        // Fetch chat detail to discover the latest version id.
+        const detail = await client.get<V0ChatDetailForExport>(
+          `/v1/chats/${encodeURIComponent(componentId)}`
+        );
+        versionId = detail.latestVersion?.id;
+        if (!versionId) {
+          throw new Error(
+            `export-code: chat '${componentId}' has no latestVersion to export`
+          );
+        }
+      }
+      const resp = await client.get<V0VersionDetailResponse>(
+        `/v1/chats/${encodeURIComponent(componentId)}/versions/${encodeURIComponent(versionId)}`
+      );
+      const files: Record<string, string> = {};
+      for (const f of resp.files ?? []) {
+        if (f.name && typeof f.content === 'string') {
+          files[f.name] = f.content;
+        }
+      }
+      return { files };
     }, { attempts: 3, baseMs: 250 });
   },
 };

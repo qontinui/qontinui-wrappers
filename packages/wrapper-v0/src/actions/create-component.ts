@@ -1,9 +1,16 @@
 /**
  * Action: `create-component`
  *
- * Creates a new v0 component from a natural-language prompt. Supports both
- * transports — the `api` path POSTs to the v0 REST endpoint; the browser
- * path drives the UI's prompt box as a fallback.
+ * Creates a new v0 chat from a natural-language prompt. v0's data model is
+ * built around chats (a generation conversation that produces version
+ * snapshots). This wrapper preserves the historical `componentId` public
+ * parameter name; internally `componentId === chatId` and the action POSTs
+ * to v0's `chats.create` endpoint. The historical `framework` parameter has
+ * no direct v0 equivalent — it would need to be inlined into a `system`
+ * hint, which would misrepresent the API capability — so it is silently
+ * ignored if passed (preserves backward compat without surprising callers).
+ *
+ * Endpoint: POST /v1/chats { message: <prompt>, ... } → ChatDetail
  *
  * v0 API surface may change — verify against their current docs.
  */
@@ -15,7 +22,7 @@ import type { ActionDescriptor } from './types.js';
 
 export interface CreateComponentParams {
   prompt: string;
-  /** Optional project id to associate the component with. */
+  /** Optional project id to associate the chat with. */
   projectId?: string;
 }
 
@@ -30,6 +37,12 @@ export const createComponentParamSchema = paramSchemaOf({
 });
 
 const supports = ['api', 'headless', 'headed'] as const;
+
+interface V0ChatDetailResponse {
+  id?: string;
+  webUrl?: string;
+  url?: string;
+}
 
 export const createComponent: ActionDescriptor<
   CreateComponentParams,
@@ -47,12 +60,18 @@ export const createComponent: ActionDescriptor<
     if (kind === 'api') {
       return withRetry(async () => {
         const client = createV0ApiClient();
-        // v0 API surface may change — verify against their current docs.
-        const body: Record<string, unknown> = { prompt };
+        // Map wrapper params → v0 chats.create body. `responseMode: 'sync'`
+        // is the default; explicit here for clarity. `framework` (legacy
+        // wrapper param) has no direct v0 field — silently dropped.
+        const body: Record<string, unknown> = {
+          message: prompt,
+          responseMode: 'sync',
+        };
         if (params?.projectId) body['projectId'] = params.projectId;
-        const resp = await client.post<{ id: string; url?: string }>('/v1/components', body);
-        const result: CreateComponentResult = { componentId: resp.id };
-        if (resp.url) result.url = resp.url;
+        const resp = await client.post<V0ChatDetailResponse>('/v1/chats', body);
+        const result: CreateComponentResult = { componentId: resp.id ?? '' };
+        const url = resp.webUrl ?? resp.url;
+        if (url) result.url = url;
         return result;
       }, { attempts: 3, baseMs: 250 });
     }
