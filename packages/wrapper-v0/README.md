@@ -5,14 +5,15 @@ actions v0's public API does not cover.
 
 ## Actions
 
-| Action                      | Transports              | Notes                                            |
-| --------------------------- | ----------------------- | ------------------------------------------------ |
-| `create-component`          | api, headless, headed   | POST /v1/components or drive the prompt UI       |
-| `iterate-component`         | api                     | POST /v1/components/:id/iterations               |
-| `export-code`               | api                     | GET /v1/components/:id/export                    |
-| `list-recent`               | api                     | GET /v1/components?limit=N                       |
-| `step-through-iterations`   | headless, headed        | Clicks `next iteration` control                  |
-| `inspect-preview-state`     | headless, headed        | Reads preview iframe metadata                    |
+| Action                      | Transports              | Endpoint / Notes                                                |
+| --------------------------- | ----------------------- | --------------------------------------------------------------- |
+| `create-component`          | api, headless, headed   | `POST /v1/chats`                                                |
+| `iterate-component`         | api                     | `POST /v1/chats/:chatId/messages` (returns ChatDetail)          |
+| `export-code`               | api                     | `GET /v1/chats/:chatId/versions/:versionId` (files inline)      |
+| `download-component`        | api                     | `GET /v1/chats/:chatId/versions/:versionId/download` (binary)   |
+| `list-recent`               | api                     | `GET /v1/chats?limit=N`                                         |
+| `step-through-iterations`   | headless, headed        | Clicks `next iteration` control                                 |
+| `inspect-preview-state`     | headless, headed        | Reads preview iframe metadata                                   |
 
 Each action declares its supported transports. `registerHandlers(transport)`
 only registers the actions that the transport can satisfy, and returns the
@@ -20,9 +21,29 @@ registered/skipped lists. A `NO_HANDLER` dispatch error is easier to
 diagnose than a runtime crash deep inside an action handler that assumed a
 different context.
 
-> v0 API surface may change — the `/v1/*` paths above are based on the
-> documented shape at time of writing. Re-check against Vercel's current
-> docs if an action starts failing.
+The action contracts use `componentId` and `iterationId` as parameter names
+for backward compatibility — internally these are v0's `chatId` and
+`versionId`. Each action file's header comment documents the mapping.
+
+> v0 API surface evolves — paths above reflect the OpenAPI spec at
+> `https://api.v0.dev/v1/openapi.json` as of 2026-04-25. If an action
+> starts failing with 404, re-check against the current spec; the
+> migration from `/v1/components` to `/v1/chats` (early 2026) is the kind
+> of churn this wrapper has to track.
+
+## Gotchas
+
+**OpenAPI spec ≠ live behavior.** v0's spec lists multiple response
+formats for `chats.downloadVersion` (`application/zip` and
+`application/gzip`), but the live endpoint always returns zip today —
+`Accept: application/gzip` is silently ignored, `?format=gzip` query
+returns 422. The `download-component` action accepts a `format` parameter
+as an Accept hint for forward-compat, but **`result.format` reflects the
+server's actual Content-Type, not the request**. So `format: 'gzip'`
+today returns `{ format: 'zip', ... }` — truthful instead of misleading.
+If v0 starts honoring gzip in the future, the wrapper picks it up
+automatically via Content-Type. Verify-don't-trust applies to any
+spec-documented capability you haven't probed live.
 
 ## Setup
 
