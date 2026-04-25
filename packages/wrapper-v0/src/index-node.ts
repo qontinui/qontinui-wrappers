@@ -7,6 +7,14 @@
  * provide, to keep the default cheap.
  */
 
+import { config as loadDotenv } from 'dotenv';
+
+// Auto-load credentials from `.env.local` then `.env` in cwd. Existing
+// `process.env` values always win (override: false). Both calls silently
+// no-op when the files don't exist.
+loadDotenv({ path: '.env.local', override: false, quiet: true });
+loadDotenv({ path: '.env', override: false, quiet: true });
+
 import { createTransport } from '@qontinui/ui-bridge-wrapper';
 import { registerHandlers } from './handlers.js';
 

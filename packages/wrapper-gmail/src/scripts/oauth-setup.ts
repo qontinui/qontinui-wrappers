@@ -17,15 +17,26 @@
  * one is a one-time interactive chore — keeping it here means the runtime
  * module stays a pure, testable boundary while operators still have a
  * supported path to mint a token without writing the loopback flow
- * themselves. Pulls only on `googleapis` (already a wrapper dep) — no new
- * deps, no fragile dotenv loader: env-only is the documented contract.
+ * themselves.
+ *
+ * Credential resolution: process.env first, then `.env.local`, then `.env`
+ * in the current working directory. Pre-existing process.env values always
+ * win — file-loaded values are pure fallback. This matches the wrapper's
+ * own runtime entrypoint behavior so the same `.env.local` works for both
+ * minting the token and running the wrapper.
  */
 
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
+import { config as loadDotenv } from 'dotenv';
 import { google } from 'googleapis';
 import type { OAuth2Client } from 'google-auth-library';
+
+// Load credentials from .env.local then .env. Existing process.env wins.
+// Both calls silently no-op when files don't exist.
+loadDotenv({ path: '.env.local', override: false, quiet: true });
+loadDotenv({ path: '.env', override: false, quiet: true });
 
 /** Single Gmail scope kept in lockstep with `auth.ts` / runtime usage. */
 export const GMAIL_OAUTH_SETUP_SCOPE = 'https://www.googleapis.com/auth/gmail.modify';
