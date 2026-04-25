@@ -326,4 +326,19 @@ describe('download-component (api-only)', () => {
       downloadComponent.handler({ componentId: '' }, { kind: 'api' })
     ).rejects.toThrow(/componentId/);
   });
+
+  it("reports actual response format when v0 ignores the gzip Accept hint", async () => {
+    // Live behavior verified 2026-04-25: v0's downloadVersion always sends
+    // application/zip even when the client requests gzip. The wrapper must
+    // not lie about that — `result.format` should reflect what came back,
+    // not what was requested.
+    const zipBytes = new Uint8Array([0x50, 0x4b, 0x03, 0x04]);
+    mockBinaryFetchOnce(zipBytes, 'application/zip');
+    const { downloadComponent } = await import('../src/actions/download-component.js');
+    const result = await downloadComponent.handler(
+      { componentId: 'chat-x', iterationId: 'ver-y', format: 'gzip' },
+      { kind: 'api' }
+    );
+    expect(result.format).toBe('zip'); // not 'gzip' even though caller asked
+  });
 });

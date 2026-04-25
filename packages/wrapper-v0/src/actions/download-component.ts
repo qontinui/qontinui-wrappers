@@ -1,28 +1,37 @@
 /**
  * Action: `download-component`
  *
- * Downloads a v0 chat version as a single archive blob (zip or gzip),
- * complementing `export-code` which returns per-file content. Useful when
- * callers want a self-contained artifact to write to disk, attach to a CI
- * job, or pass to a packaging step.
+ * Downloads a v0 chat version as a single archive blob, complementing
+ * `export-code` which returns per-file content. Useful when callers want
+ * a self-contained artifact to write to disk, attach to a CI job, or
+ * pass to a packaging step.
  *
  * Endpoint: GET /v1/chats/{chatId}/versions/{versionId}/download
  *           (operationId `chats.downloadVersion`)
  *
- * Per OpenAPI the response is `application/zip` or `application/gzip` —
- * binary, not JSON. We bypass the typed client here and fetch directly so
- * `transports/api.ts` stays JSON-only. The bytes are base64-encoded for
- * the JSON-serializable wrapper return value (33% inflation, fine for
- * typical generated component archives in the tens-of-KB range).
+ * **Format reality (verified live 2026-04-25):** v0's OpenAPI spec lists
+ * `application/zip` *and* `application/gzip` as valid response content
+ * types, but the live endpoint always returns `application/zip` —
+ * `Accept: application/gzip` is silently ignored, `?format=gzip` returns
+ * 422. The `format` parameter on this action is forwarded as an `Accept`
+ * hint for forward-compat, but the **`result.format` field reflects the
+ * actual response Content-Type, not the request.** So if you pass
+ * `format: 'gzip'` today and v0 returns zip (which it always does),
+ * `result.format === 'zip'`. This avoids lying to callers downstream.
+ *
+ * Implementation: bypasses the typed JSON client (`transports/api.ts`
+ * stays JSON-only). Bytes are base64-encoded for JSON-serializable
+ * wire transport (33% inflation, fine for typical generated archives
+ * in the tens-of-KB range).
  *
  * Public contract:
  *   - `componentId` is the chat id (preserved for parity with sibling actions)
  *   - `iterationId` is the version id; if absent we fall back to chat.latestVersion.id
- *   - `format` chooses the Accept header; default is "zip"
+ *   - `format` is a request hint only ("zip" default); response Content-Type wins
  *
  * Returns `{ format, byteLength, base64 }`. Caller decodes when needed:
  *   const buf = Buffer.from(result.base64, 'base64');
- *   fs.writeFileSync(`${componentId}.zip`, buf);
+ *   fs.writeFileSync(`${componentId}.${result.format}`, buf);
  */
 
 import { withRetry, paramSchemaOf } from '@qontinui/ui-bridge-wrapper';
@@ -110,8 +119,13 @@ export const downloadComponent: ActionDescriptor<
       const bytes = new Uint8Array(buf);
       // Node 18+ Buffer; works in any Node runtime the wrapper supports.
       const base64 = Buffer.from(bytes).toString('base64');
+      // Trust the response's Content-Type over the user's `format` hint —
+      // v0 currently always sends application/zip regardless of Accept.
+      const responseCt = (resp.headers.get('content-type') ?? '').toLowerCase();
+      const actualFormat: DownloadFormat =
+        responseCt.includes('gzip') ? 'gzip' : 'zip';
       return {
-        format,
+        format: actualFormat,
         byteLength: bytes.byteLength,
         base64,
       };
