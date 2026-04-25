@@ -24,6 +24,7 @@
   },
   "license": "MIT",
   "pnpm": {
+    "onlyBuiltDependencies": ["esbuild"],
     "overrides": {
       "@qontinui/ui-bridge": "link:../ui-bridge/packages/ui-bridge",
       "@qontinui/ui-bridge-wrapper": "link:../ui-bridge/packages/ui-bridge-wrapper",
