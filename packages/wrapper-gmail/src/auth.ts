@@ -7,10 +7,11 @@
  * token automatically when it expires.
  *
  * The interactive loopback flow that mints a fresh refresh token is
- * intentionally out of scope here — provision one up front via
- * `node dist/scripts/oauth-setup.js` (see README) and paste the result into
- * `.env`. Centralizing the refresh flow keeps this module a tiny, testable
- * boundary.
+ * intentionally out of scope here — provision one up front via the
+ * `gmail-oauth-setup` bin (`pnpm --filter @qontinui/wrapper-gmail exec
+ * gmail-oauth-setup`, source in `src/scripts/oauth-setup.ts`, see README)
+ * and paste the result into `.env`. Centralizing the refresh flow keeps
+ * this module a tiny, testable boundary.
  */
 
 import { google } from 'googleapis';
@@ -70,17 +71,18 @@ export async function refreshAccessToken(oauth2: OAuth2Client): Promise<void> {
 }
 
 /**
- * Placeholder for the interactive loopback flow.
+ * Pointer to the interactive loopback flow.
  *
- * Implemented as a stub here; a fleshed-out CLI script that opens the
- * consent URL and captures the code over a one-shot HTTP server lives in
- * `src/scripts/oauth-setup.ts` (intentionally not implemented in this
- * phase — see README).
+ * The CLI implementation lives in `src/scripts/oauth-setup.ts` and ships
+ * as the `gmail-oauth-setup` bin; this stub stays here so callers that
+ * imported it pre-2026-04 still get a clear, helpful error rather than
+ * `undefined is not a function` if they never updated their workflow.
  */
 export async function runInteractiveOAuthFlow(): Promise<never> {
   throw new Error(
-    'Interactive OAuth flow not implemented. Run `node dist/scripts/oauth-setup.js` ' +
-      'after provisioning that helper, or mint a refresh token manually via the ' +
-      'Google Cloud console and paste it into .env.'
+    'Interactive OAuth flow has moved to the `gmail-oauth-setup` bin. Run ' +
+      '`pnpm --filter @qontinui/wrapper-gmail exec gmail-oauth-setup` (or ' +
+      'invoke `dist/scripts/oauth-setup.cjs` directly with node) and paste ' +
+      'the printed GMAIL_REFRESH_TOKEN into .env.'
   );
 }

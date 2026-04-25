@@ -19,24 +19,58 @@ automatically.
 ```bash
 cp .env.example .env
 # Fill in GMAIL_OAUTH_CLIENT_ID, GMAIL_OAUTH_CLIENT_SECRET,
-# and GMAIL_REFRESH_TOKEN. See "Provisioning a refresh token" below.
+# and GMAIL_REFRESH_TOKEN. See "Getting credentials" below.
 ```
 
-## Provisioning a refresh token
+## Getting credentials
 
-Two options:
+1. **Create a Google Cloud OAuth client.** In the [Google Cloud
+   Console](https://console.cloud.google.com/), create (or pick) a
+   project, enable the Gmail API, and add an OAuth 2.0 Client ID of type
+   **Desktop application**. Google's
+   [OAuth desktop guide](https://developers.google.com/identity/protocols/oauth2/native-app)
+   covers the console steps in detail; we don't reproduce them here.
 
-1. **Google Cloud console** — easiest for a one-off. Create an OAuth 2.0
-   Client (desktop application), mint a refresh token via the OAuth
-   Playground or `gcloud auth application-default login`, and paste it
-   into `.env`.
+2. **Set the client id + secret in your environment.** Copy
+   `.env.example` to `.env` and fill in the two values from the credential
+   you just created:
 
-2. **Loopback flow helper** (TBD) — run `node dist/scripts/oauth-setup.js`.
-   The script opens the consent URL in a browser and captures the code via
-   a temporary local HTTP server on `127.0.0.1:<ephemeral>/oauth/callback`.
-   This script is not implemented in the current phase — `src/auth.ts`
-   throws a clear error pointing here. See `runInteractiveOAuthFlow` for the
-   stub.
+   ```env
+   GMAIL_OAUTH_CLIENT_ID=...
+   GMAIL_OAUTH_CLIENT_SECRET=...
+   ```
+
+3. **Run the loopback setup script** to mint a refresh token. The
+   credentials must already be exported in your shell — the script reads
+   them from `process.env` (it does not load `.env` itself):
+
+   ```bash
+   # from the repo root
+   set -a; . packages/wrapper-gmail/.env; set +a   # POSIX shells
+   pnpm --filter @qontinui/wrapper-gmail exec gmail-oauth-setup
+   ```
+
+   PowerShell equivalent:
+
+   ```powershell
+   Get-Content packages/wrapper-gmail/.env | ForEach-Object {
+     if ($_ -match '^([^=#]+)=(.*)$') { Set-Item "env:$($Matches[1])" $Matches[2] }
+   }
+   pnpm --filter @qontinui/wrapper-gmail exec gmail-oauth-setup
+   ```
+
+   The script picks an ephemeral loopback port, prints the consent URL
+   (and best-effort opens it in your browser), waits for Google to
+   redirect to `http://127.0.0.1:<port>/oauth/callback`, exchanges the
+   auth code for tokens, and prints the refresh token in
+   copy-pasteable form.
+
+4. **Paste `GMAIL_REFRESH_TOKEN` into `.env`.** That's it — the wrapper
+   is now ready and `auth.ts` will pick the value up at runtime.
+
+The script always re-prompts for consent (`prompt=consent`) so each run
+mints a fresh refresh token; the previous one keeps working until you
+revoke it at <https://myaccount.google.com/permissions>.
 
 ## Entry points
 

@@ -18,6 +18,9 @@
       "require": "./dist/index-node.cjs"
     }
   },
+  "bin": {
+    "gmail-oauth-setup": "./dist/scripts/oauth-setup.cjs"
+  },
   "files": [
     "dist",
     "README.md"
