@@ -53,9 +53,9 @@ importers:
       '@qontinui/ui-bridge-wrapper':
         specifier: link:../../../ui-bridge/packages/ui-bridge-wrapper
         version: link:../../../ui-bridge/packages/ui-bridge-wrapper
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
+      google-auth-library:
+        specifier: ^9.0.0
+        version: 9.15.1
       googleapis:
         specifier: ^144.0.0
         version: 144.0.0
@@ -96,9 +96,6 @@ importers:
       '@qontinui/ui-bridge-wrapper':
         specifier: link:../../../ui-bridge/packages/ui-bridge-wrapper
         version: link:../../../ui-bridge/packages/ui-bridge-wrapper
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
     devDependencies:
       '@qontinui/_testing-harness':
         specifier: workspace:*
@@ -879,10 +876,6 @@ packages:
   dir-glob@3.0.1:
     resolution: {integrity: sha512-WkrWp9GR4KXfKGYzOLmTuGVi1UWFfws377n9cc55/tb6DuqyF6pcQ5AbiHEshaDpY9v6oaSr2XCDidGmMwdzIA==}
     engines: {node: '>=8'}
-
-  dotenv@16.6.1:
-    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
-    engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2360,8 +2353,6 @@ snapshots:
   dir-glob@3.0.1:
     dependencies:
       path-type: 4.0.0
-
-  dotenv@16.6.1: {}
 
   dunder-proto@1.0.1:
     dependencies:
