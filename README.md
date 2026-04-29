@@ -108,3 +108,7 @@ qontinui-wrappers/
 │   └── wrapper-v0/            # api + browser fallback reference
 └── README.md                  # this file
 ```
+
+## License
+
+Licensed under the GNU Affero General Public License v3.0 or later (AGPL-3.0-or-later). See [LICENSE](LICENSE) for full terms. Contributing requires signing the [CLA](CLA.md) — see [CONTRIBUTING.md](CONTRIBUTING.md).
