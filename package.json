@@ -24,12 +24,6 @@
   },
   "license": "AGPL-3.0-or-later",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"],
-    "overrides": {
-      "@qontinui/ui-bridge": "link:../ui-bridge/packages/ui-bridge",
-      "@qontinui/ui-bridge-wrapper": "link:../ui-bridge/packages/ui-bridge-wrapper",
-      "@qontinui/ui-bridge-headless": "link:../ui-bridge/packages/ui-bridge-headless",
-      "@qontinui/ui-bridge-extension": "link:../ui-bridge/packages/ui-bridge-extension"
-    }
+    "onlyBuiltDependencies": ["esbuild"]
   }
 }

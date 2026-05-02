@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@qontinui/_tsconfig": "workspace:*",
-    "@qontinui/ui-bridge-wrapper": "file:../../../ui-bridge/packages/ui-bridge-wrapper",
+    "@qontinui/ui-bridge-wrapper": "^0.1.2",
     "@types/node": "^20.10.0",
     "rimraf": "^5.0.0",
     "typescript": "^5.3.0"

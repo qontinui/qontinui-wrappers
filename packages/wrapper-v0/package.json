@@ -50,8 +50,8 @@
   "devDependencies": {
     "@qontinui/_testing-harness": "workspace:*",
     "@qontinui/_tsconfig": "workspace:*",
-    "@qontinui/ui-bridge": "file:../../../ui-bridge/packages/ui-bridge",
-    "@qontinui/ui-bridge-wrapper": "file:../../../ui-bridge/packages/ui-bridge-wrapper",
+    "@qontinui/ui-bridge": "^0.3.2",
+    "@qontinui/ui-bridge-wrapper": "^0.1.2",
     "@types/node": "^20.10.0",
     "@types/react": "^19.0.0",
     "playwright": "^1.49.0",
